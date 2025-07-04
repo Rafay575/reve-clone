@@ -28,7 +28,7 @@ const ImageGalleryPage: React.FC = () => {
         {/* Image Grid */}
         <div className=" px-6 py-4">
        
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {images.map((img) => (
               <div
                 key={img.id}
@@ -73,7 +73,7 @@ const ImageGalleryPage: React.FC = () => {
         </div>
         {/* Image Prompt Section */}
 
-        <div className="flex  w-full md:w-3/4 lg:w-1/2 mx-auto fixed bottom-6 left-1/2 -translate-x-1/2 flex-col  items-center md:items-start gap-4 bg-gray-600 backdrop-blur-md p-5 rounded-xl shadow-lg border border-gray-500">
+        <div className="flex  w-[95%] md:w-3/4 lg:w-1/2  fixed bottom-6 left-1/2 -translate-x-1/2 flex-col  items-center md:items-start gap-4 bg-gray-600 backdrop-blur-md p-5 rounded-xl shadow-lg border border-gray-500">
           <div className="flex items-center w-full gap-2">
             <input
               type="text"
