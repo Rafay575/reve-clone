@@ -75,9 +75,9 @@ const ReveLanding: React.FC = () => {
         variants={fadeUp}
         transition={{ delay: 0.5 }}
       >
-        <Link href="#">Privacy Policy</Link>
-        <Link href="#">Terms & Conditions</Link>
-        <Link href="#">Contact Us</Link>
+        <Link href="/privacypolicy">Privacy Policy</Link>
+        <Link href="/termspage">Terms & Conditions</Link>
+        <Link href="/contact">Contact Us</Link>
       </motion.div>
     </section>
   );
