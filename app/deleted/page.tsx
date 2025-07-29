@@ -1,9 +1,9 @@
-// app/deleted/page.tsx
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
-export default function DeletedPage() {
+function DeletedContent() {
   const params = useSearchParams();
   const email = params.get("email");
   const name = params.get("name");
@@ -27,5 +27,13 @@ export default function DeletedPage() {
         </button>
       </div>
     </div>
+  );
+}
+
+export default function DeletedPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-black text-white">Loading…</div>}>
+      <DeletedContent />
+    </Suspense>
   );
 }

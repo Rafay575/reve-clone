@@ -8,8 +8,7 @@ const PUBLIC_PATHS = [
   '/about',
   '/privacypolicy',
   '/termspage',
-  '/signin',
-  '/signup',
+
   '/blocked',
   '/deleted',
   '/demo',
@@ -29,7 +28,7 @@ export async function middleware(req: NextRequest) {
   const isAdminRoute = pathname.startsWith(ADMIN_PREFIX);
 
   // 2) Call backend /auth/verify with cookies
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000';
+  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://109.205.183.142:4000';
   const verifyUrl = `${apiBase}/api/verify`;
 
   const res = await fetch(verifyUrl, {

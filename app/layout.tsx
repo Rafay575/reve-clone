@@ -3,9 +3,11 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 
-export function UIToaster() {
+// Make this a local function, not an export!
+function UIToaster() {
   return <Toaster richColors position="top-right" theme="dark" />;
 }
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
