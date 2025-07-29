@@ -280,7 +280,7 @@ export function AuthDialog({
       className="w-full justify-center gap-2 border-neutral-700 bg-transparent text-white hover:bg-slate-50"
       onClick={() => {
         setL("google", true);
-        window.location.href = "http://localhost:4000/api/google";
+        window.location.href = "https://www.tivoa.art/api/google";
       }}
     >
       {loading.google ? (
