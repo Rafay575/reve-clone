@@ -10,7 +10,7 @@ export default function SignUpPage() {
   };
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+    e.pTivoantDefault();
     alert(`Account Created!\nName: ${form.name}\nEmail: ${form.email}`);
   };
 

@@ -1,56 +1,205 @@
 "use client";
 
-import React from "react";
-import { useState } from "react";
-
-const images = [
-  { id: 1, url: "/image/a.jpeg", date: "July 3, 2025" },
-  { id: 2, url: "/image/a.jpeg", date: "July 3, 2025" },
-  { id: 3, url: "/image/a.jpeg", date: "July 3, 2025" },
-  { id: 4, url: "/image/a.jpeg", date: "July 3, 2025" },
-];
-
-import { Upload } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
+import { PromptComposer } from "@/components/prompt-composer";
+import {
+  txt2img,
+  myImages,
+  toggleFavorite,
+  softDeleteImage,
+} from "@/lib/runware"; // You must implement these APIs
+import { toast } from "sonner";
+import { Heart } from "lucide-react";
+
+type RunwareImage = {
+  id: string;
+  imageURL: string;
+  createdAt: string;
+  is_favorite?: boolean;
+  is_deleted?: boolean;
+};
 
 const ImageGalleryPage: React.FC = () => {
-  const [selected, setSelected] = useState<number[]>([]);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [images, setImages] = useState<RunwareImage[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showFavorites, setShowFavorites] = useState(false);
 
-  const toggleSelect = (id: number) => {
+  useEffect(() => {
+    loadImages();
+  }, []);
+
+  const loadImages = async () => {
+    try {
+      setLoading(true);
+      const { images: dbImages } = await myImages();
+      const normalized: RunwareImage[] = dbImages.map((img) => ({
+        id: String(img.id),
+        imageURL: img.imageURL,
+        createdAt: img.createdAt,
+        is_favorite: !!img.is_favorite,
+        is_deleted: !!img.is_deleted,
+      }));
+      setImages(normalized.filter((img) => !img.is_deleted));
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e.message || "Failed to load your images.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleSelect = (id: string) => {
     setSelected((prev) =>
       prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
     );
   };
+
+  // Favoriting logic
+  const handleToggleFavorite = async (favorite: boolean) => {
+    const promises = selected.map((id) => toggleFavorite(id, favorite));
+    await Promise.all(promises);
+    toast.success(favorite ? "Added to favorites!" : "Removed from favorites!");
+    await loadImages();
+    setSelected([]);
+  };
+
+  // Soft delete logic
+  const handleDeleteSelected = async () => {
+    if (!window.confirm("Delete selected images?")) return;
+    const promises = selected.map((id) => softDeleteImage(id));
+    await Promise.all(promises);
+    toast.success("Deleted!");
+    await loadImages();
+    setSelected([]);
+  };
+
+  // Download logic (client-side)
+  const handleDownloadSelected = async () => {
+    for (let id of selected) {
+      const img = images.find((im) => im.id === id);
+      if (!img) continue;
+      const res = await fetch(img.imageURL);
+      const blob = await res.blob();
+      const a = document.createElement("a");
+      const date = new Date(img.createdAt);
+      const filename = `tivoa_image_${date.toISOString().slice(0, 10).replace(/-/g, "")}.png`;
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+    }
+    setSelected([]);
+  };
+
+  const favImages = images.filter((img) => img.is_favorite);
+  const [gridCols, setGridCols] = useState<number>(() => {
+  if (typeof window !== "undefined") {
+    const saved = localStorage.getItem("galleryGridCols");
+    return saved ? Number(saved) : 4;   // Default 4
+  }
+  return 4;
+});
+
+useEffect(() => {
+  localStorage.setItem("galleryGridCols", gridCols.toString());
+}, [gridCols]);
+const gridClass = {
+  2: "md:grid-cols-2",
+  3: "md:grid-cols-3",
+  4: "md:grid-cols-4",
+  5: "md:grid-cols-5",
+}[gridCols] || "md:grid-cols-4";
+  const handleGenerate = async (payload: any) => {
+    try {
+      setLoading(true);
+      const { images: genImages } = await txt2img(payload);
+      const now = new Date().toISOString();
+      const normalizedGen: RunwareImage[] = (genImages ?? []).map((img, i) => ({
+        ...img,
+        id: img.imageUUID ?? img.taskUUID ?? `tmp_${Date.now()}_${i}`,
+        createdAt: now,
+        imageURL: img.imageURL,
+      }));
+      setImages((prev) =>
+        [...normalizedGen, ...prev].sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        )
+      );
+      setSelected([]);
+      if (normalizedGen.length)
+        toast.success(
+          `Generated ${normalizedGen.length} image${normalizedGen.length > 1 ? "s" : ""}!`
+        );
+      else toast.info("No images returned.");
+    } catch (e: any) {
+      console.error(e);
+      if (e.status === 402 && e.meta?.error === "INSUFFICIENT_CREDITS") {
+        toast.error(
+          `Not enough credits. Need ${e.meta.needed}, you have ${e.meta.have}.`
+        );
+      } else if (e.status === 401) {
+        toast.error("You must be logged in.");
+      } else {
+        toast.error(e.message || "Something went wrong.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <>
-      <Navbar show={selected.length > 0} />
-      <section className="min-h-screen bg-black text-white p-4 flex flex-col space-y-6">
-        {/* Image Grid */}
-        <div className=" px-6 py-4">
-       
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {images.map((img) => (
+    <section className="min-h-screen bg-black text-white flex flex-col space-y-6 relative">
+      {/* Full-screen loader */}
+      {loading && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-14 w-14 border-b-2 border-white" />
+        </div>
+      )}
+
+      <Navbar
+        show={selected.length > 0}
+        selected={selected}
+        images={images}
+        onFavorite={handleToggleFavorite}
+        onDelete={handleDeleteSelected}
+        onDownload={handleDownloadSelected}
+        showFavorites={showFavorites}
+        setShowFavorites={setShowFavorites}
+        gridCols={gridCols} setGridCols={setGridCols}
+      />
+
+   
+      <div className="px-6 py-4">
+        {loading ? (
+          <div className="text-center text-neutral-500 py-16">Loading...</div>
+        ) : (showFavorites ? favImages : images).length === 0 ? (
+          <div className="text-center text-neutral-500 py-16">
+            {showFavorites
+              ? "No favorites yet. Mark images as favorite!"
+              : "Generate some images to see them here."}
+          </div>
+        ) : (
+          <div className={`grid grid-cols-1 ${gridClass} gap-2`}>
+            {(showFavorites ? favImages : images).map((img) => (
               <div
                 key={img.id}
-                className={`relative group rounded-lg overflow-hidden cursor-pointer transition transform ${
-                  selected.includes(img.id) ? "scale-105" : "hover:scale-105"
-                }`}
+                className={`relative group overflow-hidden cursor-pointer transition transform border-2 rounded-lg ${selected.includes(img.id) ? "border-red-500" : "border-transparent"}`}
                 onClick={() => toggleSelect(img.id)}
               >
                 <img
-                  src={img.url}
-                  alt="Car"
-                  className="w-full h-full object-cover rounded-lg transition-transform duration-300"
+                  src={img.imageURL}
+                  alt={img.id}
+                  className="w-full h-full object-cover transition-transform duration-300"
                 />
-                {/* Hover Overlay Gradient */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition duration-300" />
-
-                {/* Date at Bottom Right */}
-                <div className="absolute bottom-2 right-2 text-sm bg-black/60 px-2 py-1 rounded">
-                  {img.date}
-                </div>
-
-                {/* Circle Select Button */}
+                {/* Favorite icon always top-right */}
+                {img.is_favorite && (
+                  <div className="absolute top-2 right-2 z-20">
+                    <Heart className="w-5 h-5 text-red-400 drop-shadow" />
+                  </div>
+                )}
+                {/* Circle select button */}
                 <div
                   className={`absolute top-2 left-2 bg-black/60 rounded-full w-6 h-6 border-2 border-white flex items-center justify-center transition ${
                     selected.includes(img.id)
@@ -62,45 +211,27 @@ const ImageGalleryPage: React.FC = () => {
                     <div className="bg-white w-3 h-3 rounded-full" />
                   )}
                 </div>
-
-                {/* Border if Selected */}
-                {selected.includes(img.id) && (
-                  <div className="absolute inset-0 border-4 border-purple-500 rounded-lg pointer-events-none" />
+                {/* Date */}
+                {img.createdAt && (
+                  <div className="absolute bottom-2 right-2 text-xs bg-black/60 px-2 py-1 rounded">
+                    {new Date(img.createdAt).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </div>
                 )}
               </div>
             ))}
           </div>
-        </div>
-        {/* Image Prompt Section */}
+        )}
+      </div>
 
-        <div className="flex  w-[95%] md:w-3/4 lg:w-1/2  fixed bottom-6 left-1/2 -translate-x-1/2 flex-col  items-center md:items-start gap-4 bg-gray-600 backdrop-blur-md p-5 rounded-xl shadow-lg border border-gray-500">
-          <div className="flex items-center w-full gap-2">
-            <input
-              type="text"
-              placeholder="Type text and create images..."
-              className="flex-1 w-full  p-3 rounded-md bg-black border border-gray-500 text-white outline-none placeholder-gray-500 focus:ring-2 focus:ring-purple-500 transition"
-            />
-            <button className="p-3 bg-purple-600 rounded-md hover:bg-purple-500 transition text-white shadow-md">
-              <Upload className="w-5 h-5" />
-            </button>
-          </div>
-          <div className="flex gap-2 flex-wrap justify-center md:justify-start">
-            <button className="bg-black px-4 py-2 rounded-md text-sm hover:bg-gray-500 transition">
-              3:2
-            </button>
-            <button className="bg-black px-4 py-2 rounded-md text-sm hover:bg-gray-500 transition">
-              4 images
-            </button>
-            <button className="bg-black px-4 py-2 rounded-md text-sm hover:bg-gray-500 transition">
-              Enhance on
-            </button>
-            <button className="bg-black px-4 py-2 rounded-md text-sm hover:bg-gray-500 transition">
-              Auto
-            </button>
-          </div>
-        </div>
-      </section>
-    </>
+      {/* Prompt Section */}
+      <div className="fixed bottom-4 w-[90%] left-[5%] md:w-[60%] md:left-[20%]">
+        <PromptComposer onSubmit={handleGenerate} />
+      </div>
+    </section>
   );
 };
 

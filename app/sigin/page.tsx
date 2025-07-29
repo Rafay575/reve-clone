@@ -10,7 +10,7 @@ export default function SignInPage() {
   };
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+    
     alert(`Signed In!\nEmail: ${form.email}`);
   };
 
