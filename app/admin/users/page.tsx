@@ -1,10 +1,18 @@
-'use client';
+"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
-import { Table, TableHead, TableHeader, TableRow, TableCell, TableBody } from "@/components/ui/table";
+import {
+  Table,
+  TableHead,
+  TableHeader,
+  TableRow,
+  TableCell,
+  TableBody,
+} from "@/components/ui/table";
 import { api } from "@/lib/axios";
+import { toast } from "sonner";
 
 export default function UsersPage() {
   const [users, setUsers] = useState<any[]>([]);
@@ -17,10 +25,11 @@ export default function UsersPage() {
 
   useEffect(() => {
     setLoading(true);
-    api.get('/users', {
-      params: { page, perPage, search }
-    })
-      .then(res => {
+    api
+      .get("/users", {
+        params: { page, perPage, search },
+      })
+      .then((res) => {
         setUsers(res.data.users);
         setTotalPages(res.data.totalPages);
         setTotal(res.data.total);
@@ -40,17 +49,27 @@ export default function UsersPage() {
                 <label className="text-gray-700 text-sm mr-2">Show</label>
                 <select
                   value={perPage}
-                  onChange={e => { setPerPage(Number(e.target.value)); setPage(1); }}
+                  onChange={(e) => {
+                    setPerPage(Number(e.target.value));
+                    setPage(1);
+                  }}
                   className="border border-gray-300 rounded px-2 py-1"
                 >
-                  {[5, 10, 20, 50].map(v => <option key={v} value={v}>{v}</option>)}
+                  {[5, 10, 20, 50].map((v) => (
+                    <option key={v} value={v}>
+                      {v}
+                    </option>
+                  ))}
                 </select>
                 <input
                   type="search"
                   placeholder="Search by name/email"
                   className="ml-4 border border-gray-300 rounded px-3 py-1"
                   value={search}
-                  onChange={e => { setSearch(e.target.value); setPage(1); }}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setPage(1);
+                  }}
                 />
               </div>
             </div>
@@ -69,55 +88,119 @@ export default function UsersPage() {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-8 text-center">Loading…</TableCell>
+                    <TableCell colSpan={7} className="py-8 text-center">
+                      Loading…
+                    </TableCell>
                   </TableRow>
                 ) : users.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-8 text-center">No users found.</TableCell>
+                    <TableCell colSpan={7} className="py-8 text-center">
+                      No users found.
+                    </TableCell>
                   </TableRow>
-                ) : users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>{user.id}</TableCell>
-                    <TableCell>{user.name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.role === 1 ? "Admin" : "User"}</TableCell>
-                    <TableCell>
-                      {user.is_deleted
-                        ? "Deleted"
-                        : user.is_blocked
+                ) : (
+                  users.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell>{user.id}</TableCell>
+                      <TableCell>{user.name}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        {user.role === 1 ? "Admin" : "User"}
+                      </TableCell>
+                      <TableCell>
+                        {user.is_deleted
+                          ? "Deleted"
+                          : user.is_blocked
                           ? "Blocked"
                           : "Active"}
-                    </TableCell>
-                    <TableCell>{user.credits}</TableCell>
-                    <TableCell>
-                      <Link
-                        href={`/admin/users/${user.id}`}
-                        className="text-blue-400 hover:underline"
-                      >
-                        View
-                      </Link>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                      <TableCell>{user.credits}</TableCell>
+                      <TableCell>
+                        <Link
+                          href={`/admin/users/${user.id}`}
+                          className="text-blue-400 hover:underline"
+                        >
+                          View
+                        </Link>
+                        {user.is_blocked ? (
+                          <button
+                            className="ml-2 px-2 py-1 text-xs rounded bg-green-500 text-white hover:bg-green-600 transition"
+                            onClick={async () => {
+                              try {
+                                await api.post(`/users/${user.id}/unblock`);
+                                setUsers((prev) =>
+                                  prev.map((u) =>
+                                    u.id === user.id
+                                      ? { ...u, is_blocked: 0 }
+                                      : u
+                                  )
+                                );
+                                toast.success("User unblocked successfully");
+                              } catch (error: any) {
+                                toast.error(
+                                  error?.response?.data?.message ||
+                                    "Failed to unblock user"
+                                );
+                              }
+                            }}
+                          >
+                            Unblock
+                          </button>
+                        ) : (
+                          <button
+                            className="ml-2 px-2 py-1 text-xs rounded bg-red-500 text-white hover:bg-red-600 transition"
+                            onClick={async () => {
+                              try {
+                                await api.post(`/users/${user.id}/block`);
+                                setUsers((prev) =>
+                                  prev.map((u) =>
+                                    u.id === user.id
+                                      ? { ...u, is_blocked: 1 }
+                                      : u
+                                  )
+                                );
+                                toast.success("User blocked successfully");
+                              } catch (error: any) {
+                                toast.error(
+                                  error?.response?.data?.message ||
+                                    "Failed to block user"
+                                );
+                              }
+                            }}
+                          >
+                            Block
+                          </button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
             {/* Pagination */}
             <div className="flex justify-between items-center mt-6">
               <span className="text-gray-700 text-sm">
-                Showing {users.length ? ((page - 1) * perPage + 1) : 0}–{(page - 1) * perPage + users.length} of {total} users
+                Showing {users.length ? (page - 1) * perPage + 1 : 0}–
+                {(page - 1) * perPage + users.length} of {total} users
               </span>
               <div className="flex gap-2">
                 <button
                   disabled={page <= 1}
                   className="px-3 py-1 rounded border border-gray-300 disabled:opacity-40"
                   onClick={() => setPage(page - 1)}
-                >Prev</button>
-                <span className="text-gray-700">{page} / {totalPages}</span>
+                >
+                  Prev
+                </button>
+                <span className="text-gray-700">
+                  {page} / {totalPages}
+                </span>
                 <button
                   disabled={page >= totalPages}
                   className="px-3 py-1 rounded border border-gray-300 disabled:opacity-40"
                   onClick={() => setPage(page + 1)}
-                >Next</button>
+                >
+                  Next
+                </button>
               </div>
             </div>
           </CardContent>
