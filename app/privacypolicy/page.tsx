@@ -50,7 +50,15 @@ export default function PrivacyPolicyPage() {
                 </h2>
                 <p>
                   {/* For "Contact" section, auto-link email */}
-                  { section.text}
+                  {section.heading.toLowerCase().includes("contact") ? (
+                    <>
+                        {section.text.split('support@tivoa.art')[0]}
+                        <span className="logo-gradient-text">support@tivoa.art</span>
+                        {section.text.split('support@tivoa.art')[1]}
+                      </>
+                  ) : (
+                    section.text
+                  )}
                 </p>
               </section>
             ))}
