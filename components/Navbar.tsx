@@ -126,8 +126,8 @@ export default function Navbar({
           onMouseEnter={() => setExpanded(true)}
           onMouseLeave={() => setExpanded(false)}
         >
-          <Link href="/" className="text-2xl font-bold leading-none rounded-sm">
-            <span className="logo-gradient-text">Tivoa</span>
+          <Link href="/" className=" rounded-sm">
+            <span className="logo-gradient-text text-4xl font-bold leading-none">Tivoa</span>
           </Link>
           <div className="relative flex items-center">
             <motion.div
@@ -136,7 +136,7 @@ export default function Navbar({
               className="text-xl font-semibold"
               transition={{ type: "spring", stiffness: 400, damping: 30 }}
             >
-              <Link href={active.href} className="text-white">
+              <Link href={active.href} className="text-white text-3xl">
                 {active.label}
               </Link>
             </motion.div>
@@ -153,7 +153,7 @@ export default function Navbar({
                     <motion.li key={item.href} variants={itemVariants}>
                       <Link
                         href={item.href}
-                        className="text-gray-400 hover:text-white transition-colors"
+                        className="text-gray-400 text-3xl hover:text-white transition-colors"
                       >
                         {item.label}
                       </Link>
