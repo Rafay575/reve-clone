@@ -137,17 +137,16 @@ const downloadPDF = async () => {
               )}
             </div>
           </div>
+{/* DATA RETENTION NOTE */}
+<div className="rounded-md border border-white/15 bg-white/5 p-3 text-sm">
+  <p className="text-white/90">
+    <span className="font-semibold">Note:</span> Your generated images are automatically deleted after <span className="font-semibold">20 days</span>. Please download anything you want to keep.
+  </p>
+</div>
 
           {/* CREDITS */}
           <div className="space-y-6">
-            <div>
-              <p className="text-4xl font-semibold">{user?.credits ?? 0}</p>
-              <h4 className="mt-1 font-medium">Free Credits</h4>
-              <p className="text-gray-400 text-sm mt-2">
-                These are used before your paid credits. If you have fewer than
-                20 free credits, we&apos;ll top you back up to 20 everyday.
-              </p>
-            </div>
+            
             <div className="mt-6">
               <p className="text-4xl font-semibold">{user?.credits ?? 0}</p>
               <h4 className="mt-1 font-medium">Paid Credits</h4>

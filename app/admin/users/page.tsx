@@ -76,31 +76,36 @@ export default function UsersPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Sr#</TableHead>
                   <TableHead>ID</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Credits</TableHead>
+                  <TableHead>Created At</TableHead>
                   <TableHead>Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-8 text-center">
+                    <TableCell colSpan={9} className="py-8 text-center">
                       Loading…
                     </TableCell>
                   </TableRow>
                 ) : users.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-8 text-center">
+                    <TableCell colSpan={9} className="py-8 text-center">
                       No users found.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  users.map((user) => (
+                  users.map((user, index) => (
                     <TableRow key={user.id}>
+                      <TableCell>
+                        {(page - 1) * perPage + index + 1}
+                      </TableCell>
                       <TableCell>{user.id}</TableCell>
                       <TableCell>{user.name}</TableCell>
                       <TableCell>{user.email}</TableCell>
@@ -115,6 +120,12 @@ export default function UsersPage() {
                           : "Active"}
                       </TableCell>
                       <TableCell>{user.credits}</TableCell>
+                      <TableCell>
+                        {new Date(user.created_at).toLocaleString(undefined, {
+                          dateStyle: 'medium',
+                          timeStyle: 'short',
+                        })}
+                      </TableCell>
                       <TableCell>
                         <Link
                           href={`/admin/users/${user.id}`}
